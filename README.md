@@ -20,7 +20,7 @@
 2. **Send Buy Request:** The trader will send a buy request by stating the item code, the quantity and unit price.
 3. **Send Sell request:** The trader will send a sell request by stating the item code, the quantity and unit price.
 4. **View Order Status:** The Trader can view the position of buy and sell orders in the system. This will display the current best sell (least price) and the best buy (max price) for each item and their quantities.
-5. **View Trade Status:** The trader can view his/her matched trades. This will provide the trader with the details of what orders were matched, their quantities, prices and counterparty code.There will be only one server which will be running and perform the functions of order processing and trade matching in addition to acknowledging logins by clients and  servicing their requests. The order processing willbe as follows. There will be a buy and a sell order queue for each item. On receiving buy/sell order request from a trader, the server will put it in the appropriate order queue. If there is a possibility of a trade match, then that trade match will take place, the traded items will be appropriately updated and the result of the trade alongwith the details of the counterparties, item, quantity and price will be stored in the traded set.
+5. **View Trade Status:** The trader can view his/her matched trades. This will provide the trader with the details of what orders were matched, their quantities, prices and counterparty code.There will be only one server which will be running and perform the functions of order processing and trade matching in addition to acknowledging logins by clients and servicing their requests. The order processing willbe as follows. There will be a buy and a sell order queue for each item. On receiving buy/sell order request from a trader, the server will put it in the appropriate order queue. If there is a possibility of a trade match, then that trade match will take place, the traded items will be appropriately updated and the result of the trade alongwith the details of the counterparties, item, quantity and price will be stored in the traded set.
 
 ## Matching Rule for trade
 
@@ -38,6 +38,6 @@
 
 ## Prototypes for Client and Server
 
-Client: \<executable code> \<Server IP Address>\<Server Port number>
+Client: [executable code][server ip address] [Server Port number]
 
-Server: \<executable code> \<Server Port number>
+Server: [executable code][server port number]
