@@ -1,7 +1,5 @@
 temp/
 temp/**
-server
-client
 *.s
 *.d
 *.o
