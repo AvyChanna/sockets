@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
 	} else
 		printf("No port given, assuming 8080\n");
 	atexit(shutting_down);
-	signal(SIGINT, sigintHandler);
+	signal(SIGINT, sigint_handler);
 	struct sockaddr_in server, client;
 	// Create socket
 	socket_desc = socket(AF_INET, SOCK_STREAM, 0);
@@ -105,7 +105,7 @@ int main(int argc, char *argv[]) {
 			close(client_sock);
 			continue;
 		}
-		printf("got free id = %d\n", t);
+		debug("got free id = %d\n", t);
 		thread_info[t].client_socket_des = client_sock;
 		thread_info[t].client = client;
 		if(pthread_create(&(thread_info[t].thread_id), NULL, connection_handler, NULL) < 0) {
@@ -139,7 +139,7 @@ void *connection_handler(void) {
 		ptr = strtok_r(client_message, delim, &save_ptr);
 		int func = strtol(ptr, &dummy, 10);
 		if(func != 0 && thread_info[t].user_id == -1) {
-			write(sock, error_str, BUFFER_SIZE);
+			send(sock, error_str, BUFFER_SIZE, 0);
 			// memset(client_message, 0, BUFFER_SIZE);
 			close(sock);
 			set_free_by_id(pthread_self());
@@ -157,19 +157,17 @@ void *connection_handler(void) {
 			debug("login=%d, pw=%s", login_id, password);
 			pthread_mutex_lock(&thread_info_mutex);
 			int flag = check_login(login_id, password, t);
-			debug("Login Success = %d", flag);
 			if(flag)
 				thread_info[t].user_id = login_id;
 			pthread_mutex_unlock(&thread_info_mutex);
+			debug("Login Success = %d", flag);
 			if(!flag) {
-				// (login_id > 10 || login_id < 1) || strcmp(password, login_info[login_id])
-				write(sock, error_str, BUFFER_SIZE);
-				// memset(client_message, 0, BUFFER_SIZE);
+				send(sock, error_str, BUFFER_SIZE, 0);
 				close(sock);
 				set_free_by_id(pthread_self());
 				return NULL;
 			}
-			write(sock, ok_str, BUFFER_SIZE);
+			send(sock, ok_str, BUFFER_SIZE, 0);
 			continue;
 			// memset(client_message, 0, BUFFER_SIZE);
 		} else if(func == 1) {
@@ -179,16 +177,16 @@ void *connection_handler(void) {
 			debug("Buy I=%d,\tQ=%d,\tUP=%d.", item_code, quantity, unit_price);
 			pthread_mutex_lock(&critical_section_mutex);
 			int flag = add_buy_order(thread_info[t].user_id, item_code, quantity, unit_price);
-			debug("Buy Order Success = %d", flag);
 			pthread_mutex_unlock(&critical_section_mutex);
+			debug("Buy Order Success = %d", flag);
 			if(!flag) {
-				write(sock, error_str, BUFFER_SIZE);
+				send(sock, error_str, BUFFER_SIZE, 0);
 				// memset(client_message, 0, BUFFER_SIZE);
 				close(sock);
 				set_free_by_id(pthread_self());
 				return NULL;
 			}
-			write(sock, ok_str, BUFFER_SIZE);
+			send(sock, ok_str, BUFFER_SIZE, 0);
 			continue;
 		} else if(func == 2) {
 			int item_code = strtol(strtok_r(NULL, delim, &save_ptr), &dummy, 10);
@@ -197,36 +195,36 @@ void *connection_handler(void) {
 			debug("Sell I=%d,\tQ=%d,\tUP=%d.", item_code, quantity, unit_price);
 			pthread_mutex_lock(&critical_section_mutex);
 			int flag = add_sell_order(thread_info[t].user_id, item_code, quantity, unit_price);
-			debug("Sell Order Success = %d", flag);
 			pthread_mutex_unlock(&critical_section_mutex);
+			debug("Sell Order Success = %d", flag);
 			if(!flag) {
-				write(sock, error_str, BUFFER_SIZE);
+				send(sock, error_str, BUFFER_SIZE, 0);
 				// memset(client_message, 0, BUFFER_SIZE);
 				close(sock);
 				set_free_by_id(pthread_self());
 				return NULL;
 			}
-			write(sock, ok_str, BUFFER_SIZE);
+			send(sock, ok_str, BUFFER_SIZE, 0);
 			continue;
 		} else if(func == 3) {
 			entry_t temp[MAX_ITEMS][2];
 			for(int i = 0; i < MAX_ITEMS; i++) {
 				pthread_mutex_lock(&critical_section_mutex);
-				list_find_min(&buy_queue[i], &(temp[i][0]));
-				list_find_max(&buy_queue[i], &(temp[i][1]));
+				list_get_min_price(&buy_queue[i], &(temp[i][0]), NULL);
+				list_get_max_price(&buy_queue[i], &(temp[i][1]), NULL);
 				pthread_mutex_unlock(&critical_section_mutex);
 			}
 			char b[20] = {0};
 			b[19] = 0;
 			sprintf(b, "%ld%c", sizeof(temp), 0);
-			write(sock, b, 20);
+			send(sock, b, 20, 0);
 			sleep(1);
-			write(sock, temp, sizeof(temp));
+			send(sock, temp, sizeof(temp), 0);
 		} else if(func == 4) {
 			record_t temp[MAX_TRANS];
 			int c = 0;
 			pthread_mutex_lock(&critical_section_mutex);
-			for(int i = ledger_size(&ledger); i >= 0; i--) {
+			for(int i = ledger_size(&ledger); (i >= 0) && (c < MAX_TRANS); i--) {
 				record_t r = ledger_get_record(&ledger, i);
 				if(r.buyer == thread_info[i].user_id || r.seller == thread_info[i].user_id)
 					temp[c++] = r;
@@ -234,13 +232,13 @@ void *connection_handler(void) {
 			pthread_mutex_unlock(&critical_section_mutex);
 			debug("Records returned = %d", c);
 			char b[20] = {0};
-			sprintf(b, "%ld%c", sizeof(temp), 0);
+			sprintf(b, "%ld%c", sizeof(record_t) * c, 0);
 			b[19] = 0;
-			write(sock, b, 20);
-			sleep(1);
-			write(sock, temp, sizeof(temp));
+			send(sock, b, 20, 0);
+			sleep(1);		 // OPTIONAL !!!!!!!
+			send(sock, temp, sizeof(record_t) * c, 0);
 		} else {
-			write(sock, error_str, BUFFER_SIZE);
+			send(sock, error_str, BUFFER_SIZE, 0);
 			close(sock);
 			set_free_by_id(pthread_self());
 			return NULL;

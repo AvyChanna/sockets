@@ -1,6 +1,10 @@
 #ifndef _MAIN_
 #define _MAIN_
 
+#include "helpers.h"
+#include "list_ops.h"
+#include "main.h"
+
 #include <arpa/inet.h>
 #include <pthread.h>
 
@@ -11,6 +15,8 @@
 #define MAX_ITEMS (10)
 #define MAX_TRANS (10)
 #define SEPARATOR (8)
+#define DEBUG 0
+
 extern const char delim[2];
 typedef struct {		// Thread and session info
 	// int t;
