@@ -9,6 +9,8 @@ VPATH = $(SOURCES)
 OBJS := $(subst $(SOURCEDIR),$(BUILDDIR),$(SOURCES:.c=.o))
 DEPS = $(OBJS:.o=.d)
 CC = gcc
+CCOPTS = -g -Wall -Wextra
+CFLAGS = -DDEBUG
 LINKLIB = -lpthread
 ifeq ($(OS),Windows_NT)
 	RM = del /F /Q
@@ -36,6 +38,7 @@ endif
 all: run
 run:build link
 	@echo "\033[1;32mRunning Server\033[m"
+	@echo "\033[1;32m==============\033[m"
 	@./$(TARGET)
 build: directories $(OBJS)
 link: $(TARGET)
@@ -45,11 +48,11 @@ rebuild:
 	@ $(MAKE) all
 $(TARGET): $(OBJS)
 	@echo "\033[;32mLinking $@\033[m"
-	$(HIDE)$(CC) $(OBJS) $(LINKLIB) -o $(TARGET)
+	$(HIDE)$(CC) $(CFLAGS) $(CCOPTS) $(OBJS) $(LINKLIB) -o $(TARGET) 
 
 $(BUILDDIR)%.o: $(SOURCEDIR)%.c directories
 	@echo "\033[;33mBuilding $@\033[m"
-	$(HIDE)$(CC) -c -g -Wall -Wextra $(LINKLIB) -I$(INCLUDES) -o $@ $< -MMD
+	$(HIDE)$(CC) $(CFLAGS) -c $(CCOPTS) $(LINKLIB) -I$(INCLUDES) -o $@ $< -MMD
 # Include dependencies
 -include $(DEPS)
 
@@ -57,7 +60,7 @@ $(basename $(TARGET)): $(TARGET)
 
 %.o: $(SOURCEDIR)%.c directories
 	@echo "\033[1;33mBuilding $(BUILDDIR)$@\033[m"
-	$(HIDE)$(CC) -c -g -Wall -Wextra $(LINKLIB) -I$(INCLUDES) -o $(BUILDDIR)$@ $< -MMD
+	$(HIDE)$(CC) $(CFLAGS) -c $(CCOPTS) $(LINKLIB) -I$(INCLUDES) -o $(BUILDDIR)$@ $< -MMD
 
 directories:
 	$(HIDE)$(MKDIR) $(BUILDDIR) $(ERRIGNORE)

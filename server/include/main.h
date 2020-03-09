@@ -1,8 +1,6 @@
 #ifndef _MAIN_
 #define _MAIN_
 
-#include "helpers.h"
-#include "list_ops.h"
 #include "main.h"
 
 #include <arpa/inet.h>
@@ -15,10 +13,10 @@
 #define MAX_ITEMS (10)
 #define MAX_TRANS (10)
 #define SEPARATOR (8)
-#define DEBUG 0
+#define DELIMITER ';'
 
 extern const char delim[2];
-typedef struct {		// Thread and session info
+typedef struct thread_info_t {		  // Thread and session info
 	// int t;
 	pthread_t thread_id;
 	int thread_busy;
@@ -28,13 +26,13 @@ typedef struct {		// Thread and session info
 	// Add login info here
 } thread_info_t;
 
-typedef struct {
+typedef struct entry_t {
 	int user;
 	int quantity;
 	int unit_price;
 } entry_t;
 
-typedef struct {
+typedef struct record_t {
 	int buyer;
 	int seller;
 	int item;
@@ -42,12 +40,12 @@ typedef struct {
 	int unit_price;
 } record_t;
 
-typedef struct {
+typedef struct list_t {
 	entry_t entry[MAX_RECORDS];
 	int size;
 } list_t;
 
-typedef struct {
+typedef struct ledger_t {
 	record_t record[MAX_RECORDS];
 	int size;
 } ledger_t;
@@ -55,7 +53,7 @@ typedef struct {
 extern thread_info_t thread_info[MAX_CLIENTS];
 extern pthread_mutex_t thread_info_mutex;
 extern pthread_mutex_t critical_section_mutex;
-extern const char *login_info[MAX_TRADERS];
+extern char login_info[MAX_TRADERS][20];
 extern int socket_desc, client_sock, c;
 extern list_t buy_queue[MAX_ITEMS];
 extern list_t sell_queue[MAX_ITEMS];

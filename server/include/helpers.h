@@ -2,7 +2,6 @@
 #define _HELPERS_
 
 #include "helpers.h"
-#include "list_ops.h"
 #include "main.h"
 
 #include <errno.h>
@@ -18,10 +17,10 @@
 #define DEBUG_ERR_STR strerror(errno)
 #define PRINTF_FORMAT(FMT, FIRST) __attribute__((format(printf, FMT, FIRST)))
 #define SCANF_FORMAT(FMT, FIRST) __attribute__((format(scanf, FMT, FIRST)))
-#if DEBUG
+#ifdef DEBUG
 #	define debug(...) debug_print(__FILE__, __LINE__, __func__, __VA_ARGS__)
 #else
-#	define debug(...)
+#	define debug(...) printf(" \b");
 #endif
 void debug_print(const char *file, int line, const char *function, const char *message, ...) PRINTF_FORMAT(4, 5);
 //************ ************//

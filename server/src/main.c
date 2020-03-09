@@ -25,15 +25,8 @@ thread_info_t thread_info[MAX_CLIENTS];
 list_t buy_queue[MAX_ITEMS];
 list_t sell_queue[MAX_ITEMS];
 ledger_t ledger;
-const char delim[2] = {';', 0};
-const char *login_info[MAX_TRADERS] = {
-// Compile time constant initialization
-#define STATIC_INIT_VALUE "a"
-#define STATIC_INIT_COUNT MAX_TRADERS
-#include "static_init.h"
-#undef STATIC_INIT_VALUE
-#undef STATIC_INIT_COUNT
-};
+const char delim[2] = {DELIMITER, 0};
+char login_info[MAX_TRADERS][20] = {0};
 const char *error_str = "ERROR";
 const char *ok_str = "OK";
 
@@ -47,6 +40,17 @@ void init_data_structures(void) {
 	for(int i = 0; i < MAX_ITEMS; i++) {
 		buy_queue[i].size = 0;
 		sell_queue[i].size = 0;
+	}
+
+	FILE *pw = fopen("passwords.txt", "r");
+	if(!pw) {
+		debug("passwords.txt not opened: %s", DEBUG_ERR_STR);
+		exit(0);
+	}
+	for(int i = 0; i < MAX_TRADERS; i++) {
+		fgets(login_info[i], 20 * sizeof(char), pw);
+		if(login_info[i][strlen(login_info[i]) - 1] == '\n')
+			login_info[i][strlen(login_info[i]) - 1] = 0;
 	}
 }
 // main driver program
@@ -126,11 +130,10 @@ void *connection_handler(void) {
 	int t = get_int_from_id(pthread_self());
 	int sock = thread_info[t].client_socket_des;
 	// thread_info[t].user_id = -1;
-	// ^NOT reqd because get_free_id does this for us
+	// ^^^ NOT reqd because get_free_id does this for us
 	int read_size;
 	char client_message[BUFFER_SIZE];
 	char *ptr = client_message;
-	// char buffer[BUFFER_SIZE], buffer2[BUFFER_SIZE];
 
 	// Receive a message from client
 	while((read_size = recv(sock, client_message, BUFFER_SIZE, 0)) > 0) {
@@ -146,10 +149,6 @@ void *connection_handler(void) {
 			return NULL;
 		}
 		debug("FUNC=%d", func);
-		// WIP: Process message here
-		////////////////////////////////////////////////////////////////////////////
-		// client message is in client_message[_BUFFER_SIZE];
-		// Main business logic goes here
 		if(func == 0) {		   // 0:login_id:password:NULL
 			// char buffer[BUFFER_SIZE], buffer2[BUFFER_SIZE];
 			int login_id = strtol(strtok_r(NULL, delim, &save_ptr), &dummy, 10);
@@ -169,8 +168,7 @@ void *connection_handler(void) {
 			}
 			send(sock, ok_str, BUFFER_SIZE, 0);
 			continue;
-			// memset(client_message, 0, BUFFER_SIZE);
-		} else if(func == 1) {
+		} else if(func == 1) {		  // 1:item_code:quantity:unit_price
 			int item_code = strtol(strtok_r(NULL, delim, &save_ptr), &dummy, 10);
 			int quantity = strtol(strtok_r(NULL, delim, &save_ptr), &dummy, 10);
 			int unit_price = strtol(strtok_r(NULL, delim, &save_ptr), &dummy, 10);
@@ -188,7 +186,7 @@ void *connection_handler(void) {
 			}
 			send(sock, ok_str, BUFFER_SIZE, 0);
 			continue;
-		} else if(func == 2) {
+		} else if(func == 2) {		  // 2:item_code:quantity:unit_price
 			int item_code = strtol(strtok_r(NULL, delim, &save_ptr), &dummy, 10);
 			int quantity = strtol(strtok_r(NULL, delim, &save_ptr), &dummy, 10);
 			int unit_price = strtol(strtok_r(NULL, delim, &save_ptr), &dummy, 10);
@@ -206,7 +204,7 @@ void *connection_handler(void) {
 			}
 			send(sock, ok_str, BUFFER_SIZE, 0);
 			continue;
-		} else if(func == 3) {
+		} else if(func == 3) {		  // 3
 			entry_t temp[MAX_ITEMS][2];
 			for(int i = 0; i < MAX_ITEMS; i++) {
 				pthread_mutex_lock(&critical_section_mutex);
@@ -220,7 +218,7 @@ void *connection_handler(void) {
 			send(sock, b, 20, 0);
 			sleep(1);
 			send(sock, temp, sizeof(temp), 0);
-		} else if(func == 4) {
+		} else if(func == 4) {		  // 4
 			record_t temp[MAX_TRANS];
 			int c = 0;
 			pthread_mutex_lock(&critical_section_mutex);
@@ -237,7 +235,7 @@ void *connection_handler(void) {
 			send(sock, b, 20, 0);
 			sleep(1);		 // OPTIONAL !!!!!!!
 			send(sock, temp, sizeof(record_t) * c, 0);
-		} else {
+		} else {		// None of the above
 			send(sock, error_str, BUFFER_SIZE, 0);
 			close(sock);
 			set_free_by_id(pthread_self());

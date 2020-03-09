@@ -82,11 +82,12 @@ void sigint_handler(int sig_num UNUSED) {
 	printf("2. Print buy_queue\n");
 	printf("3. Print sell_queue\n");
 	printf("4. Print ledger\n");
-
+	printf("5. Print login_info\n");
+	printf("*. Back\n");
 	printf("=>");
 	scanf(" %d", &res);
 	if(res == 0) {
-		printf("Shutting down...\n");
+		debug("Shutting Down...");
 		exit(0);
 	} else if(res == 1) {
 		printf("Thread_busy = ");
@@ -125,6 +126,10 @@ void sigint_handler(int sig_num UNUSED) {
 			}
 		else
 			printf("Ledger Empty\n");
+	} else if(res == 5) {
+		printf("===Login_info===\n");
+		for(int i = 0; i < MAX_TRADERS; i++)
+			printf("%d %s\n", i, login_info[i]);
 	}
 }
 
