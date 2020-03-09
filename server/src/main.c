@@ -4,6 +4,7 @@
 #include "list_ops.h"
 
 #include <arpa/inet.h>
+#include <errno.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stdio.h>
@@ -48,7 +49,6 @@ void init_data_structures(void) {
 		sell_queue[i].size = 0;
 	}
 }
-
 // main driver program
 int main(int argc, char *argv[]) {
 	init_data_structures();
@@ -69,10 +69,10 @@ int main(int argc, char *argv[]) {
 	// Create socket
 	socket_desc = socket(AF_INET, SOCK_STREAM, 0);
 	if(socket_desc == -1) {
-		printf("Could not create socket\n");
+		debug("Could not create socket: %s", DEBUG_ERR_STR);
 		return 1;
 	}
-	printf("Socket created at %d\n", port_number);
+	debug("Socket created at %d", port_number);
 
 	// Prepare the sockaddr_in structure
 	server.sin_family = AF_INET;
@@ -81,27 +81,27 @@ int main(int argc, char *argv[]) {
 
 	// Bind
 	if(bind(socket_desc, (struct sockaddr *)&server, sizeof(server)) < 0) {
-		perror("bind failed. Error\n");
+		debug("bind failed: %s", DEBUG_ERR_STR);
 		return 1;
 	}
-	printf("bind done\n");
+	debug("bind done\n");
 
 	// Listen
 	if(listen(socket_desc, MAX_CLIENTS)) {
-		printf("listen failed\n");
+		debug("listen failed");
 		return 1;
 	}
 
 	// Accept and incoming connection
-	printf("Waiting for incoming connections...\n");
+	debug("Waiting for incoming connections...");
 	c = sizeof(struct sockaddr_in);
 	// pthread_t thread_id; FIXED: Made global
 	int t;
 	while((client_sock = accept(socket_desc, (struct sockaddr *)&client, (socklen_t *)&c))) {
-		printf("Connection accepted for type-%d client at %s:%d\n", client.sin_family, inet_ntoa(client.sin_addr),
-			   client.sin_port);
+		debug("Connection accepted for type-%d client at %s:%d\n", client.sin_family, inet_ntoa(client.sin_addr),
+			  client.sin_port);
 		if((t = get_free_id()) == -1) {
-			printf("%d threads already queued. Refusing...\n", MAX_CLIENTS);
+			debug("%d threads already queued. Refusing...", MAX_CLIENTS);
 			close(client_sock);
 			continue;
 		}
@@ -109,13 +109,13 @@ int main(int argc, char *argv[]) {
 		thread_info[t].client_socket_des = client_sock;
 		thread_info[t].client = client;
 		if(pthread_create(&(thread_info[t].thread_id), NULL, connection_handler, NULL) < 0) {
-			perror("could not create thread\n");
+			debug("could not create thread: %s", DEBUG_ERR_STR);
 			return 1;
 		}
-		printf("Handler assigned\n");
+		debug("Handler assigned");
 
 		if(client_sock < 0) {
-			perror("accept failed\n");
+			debug("accept failed: %s", DEBUG_ERR_STR);
 		}
 	}
 	return 0;
@@ -145,7 +145,7 @@ void *connection_handler(void) {
 			set_free_by_id(pthread_self());
 			return NULL;
 		}
-		print("FUNC=%d", func);
+		debug("FUNC=%d", func);
 		// WIP: Process message here
 		////////////////////////////////////////////////////////////////////////////
 		// client message is in client_message[_BUFFER_SIZE];
@@ -154,9 +154,10 @@ void *connection_handler(void) {
 			// char buffer[BUFFER_SIZE], buffer2[BUFFER_SIZE];
 			int login_id = strtol(strtok_r(NULL, delim, &save_ptr), &dummy, 10);
 			char *password = strtok_r(NULL, delim, &save_ptr);
-			print("login=%d, pw=%s", login_id, password);
+			debug("login=%d, pw=%s", login_id, password);
 			pthread_mutex_lock(&thread_info_mutex);
 			int flag = check_login(login_id, password, t);
+			debug("Login Success = %d", flag);
 			if(flag)
 				thread_info[t].user_id = login_id;
 			pthread_mutex_unlock(&thread_info_mutex);
@@ -175,8 +176,10 @@ void *connection_handler(void) {
 			int item_code = strtol(strtok_r(NULL, delim, &save_ptr), &dummy, 10);
 			int quantity = strtol(strtok_r(NULL, delim, &save_ptr), &dummy, 10);
 			int unit_price = strtol(strtok_r(NULL, delim, &save_ptr), &dummy, 10);
+			debug("Buy I=%d,\tQ=%d,\tUP=%d.", item_code, quantity, unit_price);
 			pthread_mutex_lock(&critical_section_mutex);
 			int flag = add_buy_order(thread_info[t].user_id, item_code, quantity, unit_price);
+			debug("Buy Order Success = %d", flag);
 			pthread_mutex_unlock(&critical_section_mutex);
 			if(!flag) {
 				write(sock, error_str, BUFFER_SIZE);
@@ -191,8 +194,10 @@ void *connection_handler(void) {
 			int item_code = strtol(strtok_r(NULL, delim, &save_ptr), &dummy, 10);
 			int quantity = strtol(strtok_r(NULL, delim, &save_ptr), &dummy, 10);
 			int unit_price = strtol(strtok_r(NULL, delim, &save_ptr), &dummy, 10);
+			debug("Sell I=%d,\tQ=%d,\tUP=%d.", item_code, quantity, unit_price);
 			pthread_mutex_lock(&critical_section_mutex);
 			int flag = add_sell_order(thread_info[t].user_id, item_code, quantity, unit_price);
+			debug("Sell Order Success = %d", flag);
 			pthread_mutex_unlock(&critical_section_mutex);
 			if(!flag) {
 				write(sock, error_str, BUFFER_SIZE);
@@ -227,6 +232,7 @@ void *connection_handler(void) {
 					temp[c++] = r;
 			}
 			pthread_mutex_unlock(&critical_section_mutex);
+			debug("Records returned = %d", c);
 			char b[20] = {0};
 			sprintf(b, "%ld%c", sizeof(temp), 0);
 			b[19] = 0;
@@ -242,10 +248,10 @@ void *connection_handler(void) {
 	}
 
 	if(read_size == 0) {
-		printf("Client disconnected\n");
+		debug("Client disconnected, read size = 0\n");
 		fflush(stdout);
 	} else if(read_size == -1) {
-		perror("recv failed\n");
+		debug("Recv failed, read size = -1: %s", DEBUG_ERR_STR);
 	}
 	close(sock);
 	set_free_by_id(pthread_self());

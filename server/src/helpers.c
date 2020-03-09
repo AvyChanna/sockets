@@ -1,5 +1,6 @@
 #include "helpers.h"
 
+#include "list_ops.h"
 #include "main.h"
 
 #include <pthread.h>
@@ -75,11 +76,53 @@ void sigintHandler(int sig_num) {
 	int res = 0;
 	printf("\nCaught signal-%d. Choose->\n", sig_num);
 	printf("0. Exit\n");
-	printf("Input=");
+	printf("1. Print thread_busy\n");
+	printf("2. Print buy_queue\n");
+	printf("3. Print sell_queue\n");
+	printf("4. Print ledger\n");
+
+	printf("=>");
 	scanf(" %d", &res);
 	if(res == 0) {
 		printf("Shutting down...\n");
 		exit(0);
+	} else if(res == 1) {
+		printf("Thread_busy = ");
+		for(int i = 0; i < MAX_CLIENTS; i++)
+			printf("%d, ", thread_info[i].thread_busy);
+		printf("\n");
+	} else if(res == 2) {
+		printf("===Buy queue===\n");
+		for(int g = 0; g < MAX_ITEMS; g++) {
+			int size = list_size(&buy_queue[g]);
+			if(size) {
+				printf("-Item %d-\n", g);
+				for(int i = 0; i < size; i++)
+					printf("SNo=%d,\tQ=%d,\tUP=%d,\tUSER=%d.\n", i, buy_queue[g].entry[i].quantity,
+						   buy_queue[g].entry[i].unit_price, buy_queue[g].entry[i].user);
+			}
+		}
+	} else if(res == 3) {
+		printf("===Sell queue===\n");
+		for(int g = 0; g < MAX_ITEMS; g++) {
+			int size = list_size(&sell_queue[g]);
+			if(size) {
+				printf("-Item %d-\n", g);
+				for(int i = 0; i < size; i++)
+					printf("SNo=%d,\tQ=%d,\tUP=%d,\tUSER=%d.\n", i, sell_queue[g].entry[i].quantity,
+						   sell_queue[g].entry[i].unit_price, sell_queue[g].entry[i].user);
+			}
+		}
+	} else if(res == 4) {
+		printf("===Ledger===\n");
+		int size = ledger_size(&ledger);
+		if(size)
+			for(int i = 0; i < size; i++) {
+				printf("SNo=%d,\tQ=%d,\tUP=%d,\tB=%d,\tS=%d.\n", i, ledger.record[i].quantity,
+					   ledger.record[i].unit_price, ledger.record[i].buyer, ledger.record[i].seller);
+			}
+		else
+			printf("Ledger Empty\n");
 	}
 }
 
@@ -106,7 +149,12 @@ int check_login(int login_id UNUSED, char *password UNUSED, int t UNUSED) {
 	return flag;
 };
 int add_buy_order(int login_id UNUSED, int item_code UNUSED, int quantity UNUSED, int unit_price UNUSED) {
-	// TODO
+	// WIP
+	if(list_is_full(buy_queue))
+		return 0;
+	entry_t buy_entry = {.user = login_id, .quantity = quantity, .unit_price = unit_price};
+	// if()
+
 	return 1;
 }
 int add_sell_order(int login_id UNUSED, int item_code UNUSED, int quantity UNUSED, int unit_price UNUSED) {

@@ -5,7 +5,7 @@
 #include <string.h>
 int list_insert(list_t *list, entry_t block) {
 	int size = list_size(list);
-	if(size >= MAX_RECORDS)
+	if(list_is_full(list))
 		return 0;
 	list->entry[size].user = block.user;
 	list->entry[size].quantity = block.quantity;
@@ -42,8 +42,11 @@ int list_is_empty(list_t *list) {
 int list_size(list_t *list) {
 	return list->size;
 }
+int list_is_full(list_t *list) {
+	return list_size(list) == MAX_RECORDS;
+}
 int list_find_min(list_t *list, entry_t *res) {
-	if(list_is_empty(list)){
+	if(list_is_empty(list)) {
 		memset(res, 0, sizeof(entry_t));
 		return 0;
 	}
@@ -71,7 +74,7 @@ int list_find_max(list_t *list, entry_t *res) {
 
 int ledger_insert(ledger_t *ledger, record_t block) {
 	int size = ledger_size(ledger);
-	if(size >= MAX_RECORDS)
+	if(ledger_is_full(ledger))
 		return 0;
 	ledger->record[size].buyer = block.buyer;
 	ledger->record[size].seller = block.seller;
@@ -100,4 +103,7 @@ int ledger_is_empty(ledger_t *ledger) {
 }
 int ledger_size(ledger_t *ledger) {
 	return ledger->size;
+}
+int ledger_is_full(ledger_t *ledger) {
+	return ledger_size(ledger) == MAX_RECORDS;
 }
