@@ -2,6 +2,7 @@
 
 #include "main.h"
 
+#include <string.h>
 int list_insert(list_t *list, entry_t block) {
 	int size = list_size(list);
 	if(size >= MAX_RECORDS)
@@ -42,8 +43,10 @@ int list_size(list_t *list) {
 	return list->size;
 }
 int list_find_min(list_t *list, entry_t *res) {
-	if(list_is_empty(list))
+	if(list_is_empty(list)){
+		memset(res, 0, sizeof(entry_t));
 		return 0;
+	}
 	int size = list_size(list);
 	*res = list_get_entry(list, 0);
 	for(int i = 0; i < size - 1; i++) {
@@ -54,9 +57,7 @@ int list_find_min(list_t *list, entry_t *res) {
 }
 int list_find_max(list_t *list, entry_t *res) {
 	if(list_is_empty(list)) {
-		res->quantity = 0;
-		res->unit_price = 0;
-		res->user = -1;
+		memset(res, 0, sizeof(entry_t));
 		return 0;
 	}
 	int size = list_size(list);

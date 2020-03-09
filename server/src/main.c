@@ -23,7 +23,7 @@ thread_info_t thread_info[MAX_CLIENTS];
 
 list_t buy_queue[MAX_ITEMS];
 list_t sell_queue[MAX_ITEMS];
-list_t ledger;
+ledger_t ledger;
 const char delim[2] = {';', 0};
 const char *login_info[MAX_TRADERS] = {
 // Compile time constant initialization
@@ -157,6 +157,8 @@ void *connection_handler(void) {
 			print("login=%d, pw=%s", login_id, password);
 			pthread_mutex_lock(&thread_info_mutex);
 			int flag = check_login(login_id, password, t);
+			if(flag)
+				thread_info[t].user_id = login_id;
 			pthread_mutex_unlock(&thread_info_mutex);
 			if(!flag) {
 				// (login_id > 10 || login_id < 1) || strcmp(password, login_info[login_id])
@@ -167,7 +169,6 @@ void *connection_handler(void) {
 				return NULL;
 			}
 			write(sock, ok_str, BUFFER_SIZE);
-			thread_info[t].user_id = login_id;
 			continue;
 			// memset(client_message, 0, BUFFER_SIZE);
 		} else if(func == 1) {
@@ -206,13 +207,14 @@ void *connection_handler(void) {
 			entry_t temp[MAX_ITEMS][2];
 			for(int i = 0; i < MAX_ITEMS; i++) {
 				pthread_mutex_lock(&critical_section_mutex);
-				list_get_min(&buy_queue[i], &(temp[i][0]));
-				list_get_max(&buy_queue[i], &(temp[i][1]));
+				list_find_min(&buy_queue[i], &(temp[i][0]));
+				list_find_max(&buy_queue[i], &(temp[i][1]));
 				pthread_mutex_unlock(&critical_section_mutex);
 			}
-			char b[10] = {0};
-			sprintf("%d%c", sizeof(temp), 0);
-			write(sock, b, 10);
+			char b[20] = {0};
+			b[19] = 0;
+			sprintf(b, "%ld%c", sizeof(temp), 0);
+			write(sock, b, 20);
 			sleep(1);
 			write(sock, temp, sizeof(temp));
 		} else if(func == 4) {
@@ -225,9 +227,10 @@ void *connection_handler(void) {
 					temp[c++] = r;
 			}
 			pthread_mutex_unlock(&critical_section_mutex);
-			char b[10] = {0};
-			sprintf("%d%c", sizeof(temp), 0);
-			write(sock, b, 10);
+			char b[20] = {0};
+			sprintf(b, "%ld%c", sizeof(temp), 0);
+			b[19] = 0;
+			write(sock, b, 20);
 			sleep(1);
 			write(sock, temp, sizeof(temp));
 		} else {

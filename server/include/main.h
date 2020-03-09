@@ -48,9 +48,10 @@ typedef struct ledger_t {
 extern thread_info_t thread_info[MAX_CLIENTS];
 extern pthread_mutex_t thread_info_mutex;
 extern pthread_mutex_t critical_section_mutex;
+extern const char *login_info[MAX_TRADERS];
 extern int socket_desc, client_sock, c;
-extern list_t buy_queue;
-extern list_t sell_queue;
-extern list_t ledger;
+extern list_t buy_queue[MAX_ITEMS];
+extern list_t sell_queue[MAX_ITEMS];
+extern ledger_t ledger;
 
 #endif

@@ -85,7 +85,7 @@ void sigintHandler(int sig_num) {
 
 void debug_print(const char *file, int line, const char *function, const char *message, ...) {
 	va_list args;
-
+	file = strrchr(file, '/') ? strrchr(file, '/') + 1 : file;
 	printf("DEBUG:%s:%d in %s(): ", file, line, function);
 
 	va_start(args, message);
@@ -95,15 +95,22 @@ void debug_print(const char *file, int line, const char *function, const char *m
 }
 
 int check_login(int login_id UNUSED, char *password UNUSED, int t UNUSED) {
-	// TODO
-	return 1;
+	if(login_id < 1 || login_id > 10)
+		return 0;
+	if(strcmp(password, login_info[login_id - 1]))
+		return 0;
+	int flag = 1;
+	for(int i = 0; i < MAX_CLIENTS; i++)
+		if(thread_info[i].thread_busy && thread_info[i].user_id == login_id)
+			flag = 0;
+	return flag;
 };
 int add_buy_order(int login_id UNUSED, int item_code UNUSED, int quantity UNUSED, int unit_price UNUSED) {
 	// TODO
 	return 1;
 }
 int add_sell_order(int login_id UNUSED, int item_code UNUSED, int quantity UNUSED, int unit_price UNUSED) {
-	// TODO
+	// TODO Sell_orders code
 	return 1;
 }
 int write_to_socket(int sock, char *text) {
