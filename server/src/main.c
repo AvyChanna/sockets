@@ -207,12 +207,12 @@ void *connection_handler(void) {
 			continue;
 		} else if(func == 3) {		  // 3
 			entry_t temp[MAX_ITEMS * 2];
+			pthread_mutex_lock(&critical_section_mutex);
 			for(int i = 0; i < MAX_ITEMS; i++) {
-				pthread_mutex_lock(&critical_section_mutex);
 				list_get_min_price(&buy_queue[i], &(temp[i]), NULL);
 				list_get_max_price(&buy_queue[i], &(temp[i + MAX_ITEMS]), NULL);
-				pthread_mutex_unlock(&critical_section_mutex);
 			}
+			pthread_mutex_unlock(&critical_section_mutex);
 			int s = MAX_ITEMS * 2;
 			send(sock, &s, sizeof(int), 0);
 			// sleep(1);
