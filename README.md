@@ -16,15 +16,24 @@ POSIX compilant server and client system for trading application in C
 - There are **10** known items which the traders can trade in with their codes from **1** to **10**.
 - There will be a maximum of **5** traders (with codes from **1** to **5**) who can log on to the system and work. **One trader should work from one client at a time only.**
 
+```text
+Total Traders = 5
+Total Items = 10
+```
+
 ### Client side requirements
 
-1. **Login to the System:** The trader will execute the client, give the trader number and will be logged in.After that he/she will have the following options in a menu. Several clients will login (from different terminals) and assumed they don't trade simultaneously to reduce the complexity.
+1. **Login to the System:** The trader will execute the client, give the trader number and will be logged in. After that he/she will have the following options in a menu. Several clients will login (from different terminals) and assumed they don't trade simultaneously to reduce the complexity.
 2. **Send Buy Request:** The trader will send a buy request by stating the item code, the quantity and unit price.
 3. **Send Sell request:** The trader will send a sell request by stating the item code, the quantity and unit price.
 4. **View Order Status:** The Trader can view the position of buy and sell orders in the system. This will display the current best sell (least price) and the best buy (max price) for each item and their quantities.
 5. **View Trade Status:** The trader can view his/her matched trades. This will provide the trader with the details of what orders were matched, their quantities, prices and counterparty code.
 
-There will be only one server which will be running and perform the functions of order processing and trade matching in addition to acknowledging logins by clients and servicing their requests. The order processing will be as follows. There will be a buy and a sell order queue for each item. On receiving buy/sell order request from a trader, the server will put it in the appropriate order queue. If there is a possibility of a trade match, then that trade match will take place, the traded items will be appropriately updated and the result of the trade along with the details of the counterparties, item, quantity and price will be stored in the traded set.
+There will be only one server which will be running and perform the functions of order processing and trade matching in addition to acknowledging logins by clients and servicing their requests.
+The order processing will be as follows-
+
+1. There will be a buy and a sell order queue for each item. On receiving buy/sell order request from a trader, the server will put it in the appropriate order queue.
+2. If there is a possibility of a trade match, then that trade match will take place, the traded items will be appropriately updated and the result of the trade along with the details of the counterparties, item, quantity and price will be stored in the traded set.
 
 ## Matching Rule for trade
 

@@ -9,9 +9,9 @@
 #define BUFFER_SIZE (100)
 #define MAX_CLIENTS (5)
 #define MAX_RECORDS (50)
-#define MAX_TRADERS (10)
+#define MAX_TRADERS (5)
 #define MAX_ITEMS (10)
-#define MAX_TRANS (10)
+#define MAX_TRANS (50)
 #define SEPARATOR (8)
 #define DELIMITER ';'
 

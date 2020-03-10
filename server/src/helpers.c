@@ -147,7 +147,7 @@ void debug_print(const char *file, int line, const char *function, const char *m
 
 // Check for successful login
 int check_login(int login_id UNUSED, char *password UNUSED, int t UNUSED) {
-	if(login_id < 0 || login_id > 9)
+	if(login_id < 0 || login_id > (MAX_TRADERS - 1))
 		return 0;
 	if(strcmp(password, login_info[login_id]))
 		return 0;

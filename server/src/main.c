@@ -74,7 +74,7 @@ int main(int argc, char *argv[]) {
 	socket_desc = socket(AF_INET, SOCK_STREAM, 0);
 	if(socket_desc == -1) {
 		debug("Could not create socket: %s", DEBUG_ERR_STR);
-		return 1;
+		return 0;
 	}
 	debug("Socket created at %d", port_number);
 
@@ -86,14 +86,14 @@ int main(int argc, char *argv[]) {
 	// Bind
 	if(bind(socket_desc, (struct sockaddr *)&server, sizeof(server)) < 0) {
 		debug("bind failed: %s", DEBUG_ERR_STR);
-		return 1;
+		return 0;
 	}
 	debug("bind done\n");
 
 	// Listen
 	if(listen(socket_desc, MAX_CLIENTS)) {
 		debug("listen failed");
-		return 1;
+		return 0;
 	}
 
 	// Accept and incoming connection
@@ -114,7 +114,7 @@ int main(int argc, char *argv[]) {
 		thread_info[t].client = client;
 		if(pthread_create(&(thread_info[t].thread_id), NULL, connection_handler, NULL) < 0) {
 			debug("could not create thread: %s", DEBUG_ERR_STR);
-			return 1;
+			return 0;
 		}
 		debug("Handler assigned");
 
@@ -149,7 +149,7 @@ void *connection_handler(void) {
 			return NULL;
 		}
 		debug("FUNC=%d", func);
-		if(func == 0) {		   // 0:login_id:password:NULL
+		if(func == 0) {		   // 0:login_id:password
 			// char buffer[BUFFER_SIZE], buffer2[BUFFER_SIZE];
 			int login_id = strtol(strtok_r(NULL, delim, &save_ptr), &dummy, 10);
 			char *password = strtok_r(NULL, delim, &save_ptr);
@@ -205,19 +205,17 @@ void *connection_handler(void) {
 			send(sock, ok_str, BUFFER_SIZE, 0);
 			continue;
 		} else if(func == 3) {		  // 3
-			entry_t temp[MAX_ITEMS][2];
+			entry_t temp[MAX_ITEMS * 2];
 			for(int i = 0; i < MAX_ITEMS; i++) {
 				pthread_mutex_lock(&critical_section_mutex);
-				list_get_min_price(&buy_queue[i], &(temp[i][0]), NULL);
-				list_get_max_price(&buy_queue[i], &(temp[i][1]), NULL);
+				list_get_min_price(&buy_queue[i], &(temp[i]), NULL);
+				list_get_max_price(&buy_queue[i], &(temp[i + MAX_ITEMS]), NULL);
 				pthread_mutex_unlock(&critical_section_mutex);
 			}
-			char b[20] = {0};
-			b[19] = 0;
-			sprintf(b, "%ld%c", sizeof(temp), 0);
-			send(sock, b, 20, 0);
-			sleep(1);
-			send(sock, temp, sizeof(temp), 0);
+			int s = MAX_ITEMS * 2;
+			send(sock, &s, sizeof(int), 0);
+			// sleep(1);
+			send(sock, temp, sizeof(entry_t) * s, 0);
 		} else if(func == 4) {		  // 4
 			record_t temp[MAX_TRANS];
 			int c = 0;
@@ -229,12 +227,10 @@ void *connection_handler(void) {
 			}
 			pthread_mutex_unlock(&critical_section_mutex);
 			debug("Records returned = %d", c);
-			char b[20] = {0};
-			sprintf(b, "%ld%c", sizeof(record_t) * c, 0);
-			b[19] = 0;
-			send(sock, b, 20, 0);
-			sleep(1);		 // OPTIONAL !!!!!!!
-			send(sock, temp, sizeof(record_t) * c, 0);
+			int s = c;
+			send(sock, &s, sizeof(int), 0);
+			// sleep(1);		 // OPTIONAL !!!!!!!
+			send(sock, (void *)temp, sizeof(record_t) * c, 0);
 		} else {		// None of the above
 			send(sock, error_str, BUFFER_SIZE, 0);
 			close(sock);
