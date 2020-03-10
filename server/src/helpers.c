@@ -64,7 +64,7 @@ void set_free_by_id(pthread_t t) {
 
 // get t from pthread_id, NOT thread_safe
 int get_int_from_id(pthread_t t) {
-	int mark;
+	int mark = -1;
 	for(int i = 0; i < MAX_CLIENTS; i++)
 		if(thread_info[i].thread_id == t) {
 			mark = i;

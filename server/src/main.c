@@ -52,6 +52,7 @@ void init_data_structures(void) {
 		if(login_info[i][strlen(login_info[i]) - 1] == '\n')
 			login_info[i][strlen(login_info[i]) - 1] = 0;
 	}
+	fclose(pw);
 }
 // main driver program
 int main(int argc, char *argv[]) {
