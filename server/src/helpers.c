@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
-
+#include <unistd.h>
 // Find min of 2 integers
 int min(int a, int b) {
 	return a < b ? a : b;
@@ -18,16 +18,20 @@ int min(int a, int b) {
 // runs at exit for thread_exits and cleanup
 void shutting_down(void) {
 	// Now join the thread, so that we dont terminate before the thread
+	debug("LOCK thread");
 	pthread_mutex_lock(&thread_info_mutex);
 	debug("Closing threads(if any)");
 	for(int i = 0; i < MAX_CLIENTS; i++) {
 		if(thread_info[i].thread_busy) {
 			pthread_cancel((thread_info[i].thread_id));
+			close(thread_info[i].client_socket_des);
 		}
 	}
+	debug("UNLOCK thread");
 	pthread_mutex_unlock(&thread_info_mutex);
-	int truee = 1;
 	debug("Closing main server socket");
+	int truee = 1;
+	close(socket_desc);
 	setsockopt(socket_desc, SOL_SOCKET, SO_REUSEADDR, &truee, sizeof(int));
 	debug("Destroying Mutex");
 	pthread_mutex_destroy(&critical_section_mutex);
@@ -38,6 +42,7 @@ void shutting_down(void) {
 // find a free pthread_id and return it
 int get_free_id(void) {
 	int ret = -1;
+	debug("LOCK thread");
 	pthread_mutex_lock(&thread_info_mutex);
 	for(int t = 0; t < MAX_CLIENTS; t++)
 		if(thread_info[t].thread_busy == 0) {
@@ -46,14 +51,17 @@ int get_free_id(void) {
 			ret = t;
 			break;
 		}
+	debug("UNLOCK thread");
 	pthread_mutex_unlock(&thread_info_mutex);
 	return ret;
 }
 
 // free a pthread_id
 void set_free_by_int(int t) {
+	debug("LOCK thread");
 	pthread_mutex_lock(&thread_info_mutex);
 	thread_info[t].thread_busy = 0;
+	debug("UNLOCK thread");
 	pthread_mutex_unlock(&thread_info_mutex);
 }
 
@@ -165,8 +173,7 @@ int add_buy_order(int login_id UNUSED, int item_code UNUSED, int quantity UNUSED
 	if(list_is_full(&buy_queue[item_code]))
 		return 0;
 	if(list_is_empty(&sell_queue[item_code])) {
-		list_insert(&buy_queue[item_code], buy_entry);
-		return 1;
+		return list_insert(&buy_queue[item_code], buy_entry);
 	}
 	entry_t sell_entry;
 	record_t rec;
@@ -185,7 +192,7 @@ int add_buy_order(int login_id UNUSED, int item_code UNUSED, int quantity UNUSED
 		list_get_min_price(&sell_queue[item_code], &sell_entry, &index);
 	}
 	if(buy_entry.quantity != 0)
-		list_insert(&buy_queue[item_code], buy_entry);
+		return list_insert(&buy_queue[item_code], buy_entry);
 	return 1;
 }
 
@@ -196,16 +203,15 @@ int add_sell_order(int login_id UNUSED, int item_code UNUSED, int quantity UNUSE
 	if(list_is_full(&sell_queue[item_code]))
 		return 0;
 	if(list_is_empty(&buy_queue[item_code])) {
-		list_insert(&sell_queue[item_code], sell_entry);
-		return 1;
+		return list_insert(&sell_queue[item_code], sell_entry);
 	}
 	entry_t buy_entry;
 	record_t rec;
 	int index;
 	list_get_max_price(&buy_queue[item_code], &sell_entry, &index);
-	if(index < 0 || entry_compare_price(buy_entry, sell_entry) > 0)		   // no match cases
+	if(index < 0 || entry_compare_price(buy_entry, sell_entry) < 0)		   // no match cases
 		return list_insert(&sell_queue[item_code], sell_entry);
-	while(entry_compare_price(buy_entry, sell_entry) <= 0 && sell_entry.quantity > 0 && index >= 0) {
+	while(entry_compare_price(buy_entry, sell_entry) >= 0 && sell_entry.quantity > 0 && index >= 0) {
 		rec = ledger_make_record(buy_entry, sell_entry, item_code, 0);
 		ledger_insert(&ledger, rec);
 		sell_entry.quantity -= rec.quantity;
@@ -213,9 +219,9 @@ int add_sell_order(int login_id UNUSED, int item_code UNUSED, int quantity UNUSE
 			list_remove(&buy_queue[item_code], index);
 		else
 			buy_queue[item_code].entry[index].quantity -= rec.quantity;
-		list_get_min_price(&buy_queue[item_code], &sell_entry, &index);
+		list_get_max_price(&buy_queue[item_code], &sell_entry, &index);
 	}
 	if(sell_entry.quantity != 0)
-		list_insert(&sell_queue[item_code], sell_entry);
+		return list_insert(&sell_queue[item_code], sell_entry);
 	return 1;
 }

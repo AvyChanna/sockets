@@ -10,7 +10,7 @@
 #define SEPARATOR ';'
 #define BUFFER_SIZE (100)
 #define MAX_ITEMS (10)
-
+#define PASS_BUFF_SIZE (50)
 static char send_buffer[BUFFER_SIZE];
 static char recv_buffer[BUFFER_SIZE];
 static int sock = 0;
@@ -36,6 +36,12 @@ void print_send_buffer();
 void place_order(int choice);
 void order_status();
 void ledger_status();
+
+void shutting_down() {
+	int truee = 1;
+	close(sock);
+	setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &truee, sizeof(int));
+}
 
 int main(int argc, char const *argv[]) {
 	argc--;
@@ -82,6 +88,7 @@ int main(int argc, char const *argv[]) {
 		printf("Could not connect to IP");
 		return 0;
 	}
+	atexit(shutting_down);
 	if(connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
 		printf("\nConnection Failed for server at %s:%d\n", ip, port_number);
 		return 0;
@@ -100,13 +107,13 @@ void print_send_buffer() {
 }
 
 void login() {
-	char password[BUFFER_SIZE];
+	char password[PASS_BUFF_SIZE];
 	printf("Enter Tader ID=");
-	scanf(" %d ", &trader);
+	scanf(" %d", &trader);
 	trader--;
 	printf("Enter password=");
-	fgets(password, BUFFER_SIZE, stdin);
-	password[BUFFER_SIZE - 1] = 0;
+	scanf(" %s", password);
+	password[PASS_BUFF_SIZE] = 0;
 	if(password[strlen(password) - 1] == '\n')
 		password[strlen(password) - 1] = 0;
 	// 0:login_id:password:NULL
@@ -154,14 +161,15 @@ void handle_conn() {
 void place_order(int choice) {
 	int item, unit_price, quantity;
 	printf("Enter Item Number=");
-	scanf(" %d ", &item);
+	scanf(" %d", &item);
 	item--;
 	printf("Enter Quantity=");
-	scanf(" %d ", &quantity);
+	scanf(" %d", &quantity);
 	printf("Enter unit price=");
-	scanf(" %d ", &unit_price);
+	scanf(" %d", &unit_price);
 	snprintf(send_buffer, BUFFER_SIZE, "%d%c%d%c%d%c%d%c", choice, SEPARATOR, item, SEPARATOR, quantity, SEPARATOR,
 			 unit_price, 0);
+	print_send_buffer();
 	if(send(sock, send_buffer, BUFFER_SIZE, 0) == -1) {
 		perror("Error placing order");
 		exit(0);
@@ -171,6 +179,7 @@ void place_order(int choice) {
 		exit(0);
 	}
 	recv_buffer[BUFFER_SIZE - 1] = 0;
+	print_recv_buffer();
 	if(strcmp(recv_buffer, "OK")) {
 		printf("Error placing order\n");
 		print_recv_buffer();
@@ -196,7 +205,7 @@ void order_status() {
 		exit(0);
 	}
 	if(s == 0) {
-		printf("No orders");
+		printf("No orders\n");
 		return;
 	}
 	entry_t *temp = (entry_t *)malloc(sizeof(entry_t) * s);
@@ -208,22 +217,22 @@ void order_status() {
 		perror("Recv error for temp in order_status");
 		exit(0);
 	}
-	printf("MIN SELL Prices\n");
+	printf("MAX Buy Prices\n");
 	entry_t data;
 	for(int i = 0; i < MAX_ITEMS; i++) {
 		data = *(temp + i);
 		if(data.user >= 0)
-			printf("I=%d,\tU=%d,\tQ=%d,\tUP=%d\n", i + 1, data.user + 1, data.quantity, data.unit_price);
+			printf("I=%2d,\tU=%2d,\tQ=%d,\tUP=%d\n", i + 1, data.user + 1, data.quantity, data.unit_price);
 		else
-			printf("I=%d,\t-----\n", i + 1);
+			printf("I=%2d,\t-----\n", i + 1);
 	}
-	printf("MAX BUY price\n");
+	printf("MIN Sell price\n");
 	for(int i = 0; i < MAX_ITEMS; i++) {
 		data = *(temp + i + 10);
 		if(data.user >= 0)
-			printf("I=%d,\tU=%d,\tQ=%d,\tUP=%d", i + 1, data.user + 1, data.quantity, data.unit_price);
+			printf("I=%2d,\tU=%2d,\tQ=%d,\tUP=%d\n", i + 1, data.user + 1, data.quantity, data.unit_price);
 		else
-			printf("I=%d,\t-----\n", i + 1);
+			printf("I=%2d,\t-----\n", i + 1);
 	}
 	free(temp);
 }

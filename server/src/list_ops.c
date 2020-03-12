@@ -3,8 +3,8 @@
 #include "helpers.h"
 #include "main.h"
 
+#include <stdio.h>
 #include <string.h>
-
 int list_insert(list_t *list, entry_t block) {
 	int size = list_size(list);
 	if(list_is_full(list))
@@ -12,7 +12,7 @@ int list_insert(list_t *list, entry_t block) {
 	list->entry[size].user = block.user;
 	list->entry[size].quantity = block.quantity;
 	list->entry[size].unit_price = block.unit_price;
-	size++;
+	list->size++;
 	return 1;
 }
 
@@ -20,7 +20,7 @@ int list_remove(list_t *list, int index) {
 	int size = list_size(list);
 	if(index >= size || index < 0)
 		return 0;
-	size--;
+	list->size--;
 	for(int i = index; i < size; i++)
 		list->entry[i] = list->entry[i + 1];
 	return 1;
@@ -55,18 +55,22 @@ int list_is_full(list_t *list) {
 
 int list_get_min_price(list_t *list, entry_t *res, int *index) {
 	if(list_is_empty(list)) {
-		memset(res, 0, sizeof(entry_t));
-		*index = -1;
+		if(res != NULL) {
+			memset(res, 0, sizeof(entry_t));
+			res->user = -1;
+		}
+		if(index != NULL)
+			*index = -1;
 		return 0;
 	}
 	int size = list_size(list);
 	int price = 0;
 	entry_t temp = list_get_entry(list, 0);
 	entry_t temp2;
-	int j;
-	for(int i = 0; i < size - 1; i++) {
+	int j = 0;
+	for(int i = 0; i < size; i++) {
 		temp2 = list_get_entry(list, i);
-		if(temp.unit_price > temp2.unit_price) {
+		if(temp.unit_price < temp2.unit_price) {
 			temp = temp2;
 			j = i;
 			price = temp.unit_price;
@@ -81,16 +85,20 @@ int list_get_min_price(list_t *list, entry_t *res, int *index) {
 
 int list_get_max_price(list_t *list, entry_t *res, int *index) {
 	if(list_is_empty(list)) {
-		memset(res, 0, sizeof(entry_t));
-		*index = -1;
+		if(res != NULL) {
+			memset(res, 0, sizeof(entry_t));
+			res->user = -1;
+		}
+		if(index != NULL)
+			*index = -1;
 		return 0;
 	}
 	int size = list_size(list);
 	int price = 0;
 	entry_t temp = list_get_entry(list, 0);
 	entry_t temp2;
-	int j;
-	for(int i = 0; i < size - 1; i++) {
+	int j = 0;
+	for(int i = 0; i < size; i++) {
 		temp2 = list_get_entry(list, i);
 		if(temp.unit_price < temp2.unit_price) {
 			temp = temp2;
@@ -122,7 +130,7 @@ int ledger_insert(ledger_t *ledger, record_t block) {
 	ledger->record[size].item = block.item;
 	ledger->record[size].quantity = block.quantity;
 	ledger->record[size].unit_price = block.unit_price;
-	size++;
+	ledger->size++;
 	return 1;
 }
 
