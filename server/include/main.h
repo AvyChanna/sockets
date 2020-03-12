@@ -21,7 +21,7 @@ typedef struct thread_info_t {		  // Thread and session info
 	pthread_t thread_id;
 	int thread_busy;
 	int client_socket_des;
-	struct sockaddr_in client;
+	// struct sockaddr_in client;
 	int user_id;
 	// Add login info here
 } thread_info_t;

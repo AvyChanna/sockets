@@ -76,16 +76,19 @@ int main(int argc, char const *argv[]) {
 
 	// Convert IPv4 and IPv6 addresses from text to binary form
 	if((is_valid_ip = inet_pton(AF_INET, ip, &serv_addr.sin_addr)) <= 0) {
-		printf("Invalid address/ Address not supported, exiting...\n");
+		printf("Error connecting to IP\n");
 	}
-	if(!is_valid_ip && strcmp(ip, "127.0.0.1") == 0)
+	if(!is_valid_ip && strcmp(ip, "127.0.0.1") == 0){
+		printf("Exiting...\n");
 		return 0;
+	}
 	if(!is_valid_ip) {
+		printf("Falling back to 127.0.0.1\n");
 		strcpy(ip, "127.0.0.1");
 		is_valid_ip = inet_pton(AF_INET, ip, &serv_addr.sin_addr);
 	}
 	if(!is_valid_ip) {
-		printf("Could not connect to IP");
+		printf("Could not connect, exiting...");
 		return 0;
 	}
 	atexit(shutting_down);
@@ -99,11 +102,11 @@ int main(int argc, char const *argv[]) {
 }
 
 void print_recv_buffer() {
-	printf("Response=%s\n", recv_buffer);
+	// printf("Response=%s\n", recv_buffer);
 }
 
 void print_send_buffer() {
-	printf("Sent=%s\n", send_buffer);
+	// printf("Sent=%s\n", send_buffer);
 }
 
 void login() {
@@ -155,6 +158,7 @@ void handle_conn() {
 			ledger_status();
 		else
 			exit(0);
+		printf("\n");
 	}
 }
 
@@ -266,10 +270,8 @@ void ledger_status() {
 	record_t data;
 	for(int i = 0; i < s; i++) {
 		data = *(temp + i);
-		if(data.buyer == trader)
-			printf("I=%d,\tS=%d,\tQ=%d,\tUP=%d", i + 1, data.seller + 1, data.quantity, data.unit_price);
-		else
-			printf("I=%d,\tB=%d,\tQ=%d,\tUP=%d", i + 1, data.buyer + 1, data.quantity, data.unit_price);
+		printf("I=%d,\tB=%d,\tS=%d,\tQ=%d,\tUP=%d\n", i + 1, data.buyer + 1, data.seller + 1, data.quantity,
+			   data.unit_price);
 	}
 	free(temp);
 	temp = NULL;

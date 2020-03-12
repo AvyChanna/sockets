@@ -1,7 +1,7 @@
 all: build
-	./client.out
+	@./client.out
 build:
-	gcc client.c -g -o client.out
+	@gcc client.c -g -o client.out
 clean:
-	rm -f client.out server.out
+	@rm -f client.out server.out
 
